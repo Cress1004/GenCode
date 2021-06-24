@@ -1,0 +1,110 @@
+﻿@inject GenCode.Repository.TagRepository _tagRepo;
+
+@{
+    ViewData["Title"] = "Design";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="~/js/BoundingBox/BoundingBox.js"></script>
+    <script src="~/js/BoundingBox/Elements/Button.js"></script>
+    <script src="~/js/BoundingBox/Elements/Checkbox.js"></script>
+    <script src="~/js/BoundingBox/Elements/Dropdown.js"></script>
+    <script src="~/js/BoundingBox/Elements/Heading.js"></script>
+    <script src="~/js/BoundingBox/Elements/Image.js"></script>
+    <script src="~/js/BoundingBox/Elements/Input.js"></script>
+    <script src="~/js/BoundingBox/Elements/Label.js"></script>
+    <script src="~/js/BoundingBox/Elements/Link.js"></script>
+    <script src="~/js/BoundingBox/Elements/Pagination.js"></script>
+    <script src="~/js/BoundingBox/Elements/Paragraph.js"></script>
+    <script src="~/js/BoundingBox/Elements/Radiobutton.js"></script>
+    <script src="~/js/BoundingBox/Elements/Table.js"></script>
+    <script src="~/js/BoundingBox/Elements/Textarea.js"></script>
+
+</head>
+<body>
+    @if (ViewBag.IsSuccess != null && ViewBag.IsSuccess == true)
+    {
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Add View success</strong>
+        @Html.ActionLink("Download", "DownloadFile", "GenCode", new { fileName = "index.html" })
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+
+    </div>
+    }
+    <div class="container">
+        <div class="row">
+            <div class="col">
+                <p class="display-4">Add new Element</p>
+                <div class="form-group">
+                    <label>Select Element</label>
+                    <select class="form-control" id="selected-element"
+                            asp-items="(await _tagRepo.GetTags())
+                            .Select(x => new SelectListItem() { Text = x.Type, Value = x.TagId.ToString() })">
+                    </select>
+                </div>
+                <div class="form-control">
+                    <input type="submit" value="Add Element" class="btn btn-primary"
+                           asp-action="GenCode"
+                           OnClick="AddNewElement(document.getElementById('selected-element'))" />
+                </div>
+                </div>
+            <div class="col-9" id="designContent" style="height: 540px; width:1000px; border: 1px solid black;">
+
+            </div>
+
+        </div>
+        <div class="row" id="container">
+            <div style="margin-left: auto;margin-right: 0;">
+                <input type="button" value="Save" id="onClick" />
+                @Html.ActionLink("Download", "DownloadFile", "GenCode", new { fileName = "index.html" })
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function AddNewElement(e) {
+            var element_id = parseInt(e.value);
+            var tagType = e.options[e.selectedIndex].text;
+
+            var container = document.querySelector('#designContent');
+            exComponent = eval(`new ${tagType}(tagType.toLowerCase(), document, container)`);
+            exComponent.createBox();
+            exComponent.dragElement();
+        }
+
+        $("body").on("click", "#onClick", function () {
+            var regions = [];
+            var arr = Array.prototype.slice.call(document.getElementsByClassName('ui-draggable'));
+            arr.forEach((tagele) => {
+                var str = tagele.id.toString();
+                var region = {};
+                region.TagType = str.substring(0, str.indexOf('Element'));
+                region.Height = tagele.offsetHeight;
+                region.Width = tagele.offsetWidth;
+                region.Top = tagele.offsetTop;
+                region.Left = tagele.offsetLeft;
+                regions.push(region);
+            });
+            $.ajax({
+                url: '/GenCode/Addregions',
+                type: "POST",
+                data: { regions: regions },
+                success: function () {
+                    alert("pass")
+                },
+                error: function (errorThrown) {
+                    alert(errorThrown);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
